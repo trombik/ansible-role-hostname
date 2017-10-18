@@ -1,6 +1,14 @@
 # ansible-role-hostname
 
-A brief description of the role goes here.
+Configure `hostname(1)`
+
+## Notes for Ubuntu users
+
+Ubuntu does not manage DNS domain name of the host. It is up to the users to
+set up one. Note that it is officially stated that setting `/etc/hostname`,
+which the role modifies, to FQDN is not the Right Thing. The role sets the
+short form of `hostname_fqdn` in `/etc/hostname` and, silently discards the
+rest of `hostname_fqdn`.
 
 # Requirements
 
@@ -8,9 +16,9 @@ None
 
 # Role Variables
 
-| variable | description | default |
+| Variable | Description | Default |
 |----------|-------------|---------|
-
+| `hostname_fqdn` | string of FQDN | `""` |
 
 # Dependencies
 
@@ -19,6 +27,17 @@ None
 # Example Playbook
 
 ```yaml
+- hosts: localhost
+  roles:
+    - reallyenglish.hosts
+    - ansible-role-hostname
+  vars:
+    fqdn: fqdn.example.org
+    fqdn_short: "{{ fqdn.split('.') | first }}"
+    hostname_fqdn: "{{ fqdn }}"
+    hosts_extra_localhosts:
+      - "{{ fqdn }}"
+      - "{{ fqdn_short }}"
 ```
 
 # License

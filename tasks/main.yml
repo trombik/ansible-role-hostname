@@ -3,35 +3,29 @@
 
 - include_vars: "{{ ansible_os_family }}.yml"
 
-- include: "install-{{ ansible_os_family }}.yml"
+- name: Assert hostname_fqdn is defined and NOT empty
+  assert:
+    msg: hostname_fqdn must be defined and NOT empty
+    that:
+      - hostname_fqdn is defined
+      - hostname_fqdn != ""
+    
+# XXX replace `include` with `include_task` after all platforms have recent
+# version of ansible
+- include: "configure-{{ ansible_os_family }}.yml"
 
-- name: Create log directory
-  file:
-    path: "{{ hostname_log_dir }}"
-    mode: 0755
-    owner: "{{ hostname_user }}"
-    group: "{{ hostname_group }}"
-    state: directory
-  notify: Restart hostname
+- name: Set hostname by hostname(1)
+  command: "hostname {% if ansible_os_family == 'Debian' %}{{ hostname_fqdn.split('.') | first }}{% else %}{{ hostname_fqdn }}{% endif %}"
+  when:
+    - ansible_fqdn != hostname_fqdn
 
-- name: Create db directory
-  file:
-    path: "{{ hostname_db_dir }}"
-    mode: 0755
-    owner: "{{ hostname_user }}"
-    group: "{{ hostname_group }}"
-    state: directory
-  notify: Restart hostname
+- name: Load facts again
+  setup:
+  when:
+    - ansible_fqdn != hostname_fqdn
 
-- name: Create hostname.conf
-  template:
-    src: hostname.conf.j2
-    dest: "{{ hostname_conf_file }}"
-    validate: echo %s
-  notify: Restart hostname
-
-- name: Start hostname
-  service:
-    name: "{{ hostname_service }}"
-    enabled: true
-    state: started
+- name: Assert ansible_fqdn has been updated to hostname_fqdn
+  assert:
+    msg: "ansible_fqdn (`{{ ansible_fqdn }}`) is not identical with `{{ hostname_fqdn }}` after executing the role. this should not happen and probably is a bug in the role"
+    that:
+      - ansible_fqdn == hostname_fqdn

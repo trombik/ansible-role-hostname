@@ -1,58 +1,95 @@
 require "spec_helper"
 require "serverspec"
+require "multi_json"
 
-package = "hostname"
-service = "hostname"
-config  = "/etc/hostname/hostname.conf"
-user    = "hostname"
-group   = "hostname"
-ports   = [PORTS]
-log_dir = "/var/log/hostname"
-db_dir  = "/var/lib/hostname"
+fqdn = "fqdn.example.org"
+short_name = fqdn.split(".").first
+default_user = "root"
+default_group = "root"
 
 case os[:family]
-when "freebsd"
-  config = "/usr/local/etc/hostname.conf"
-  db_dir = "/var/db/hostname"
-end
-
-describe package(package) do
-  it { should be_installed }
-end
-
-describe file(config) do
-  it { should be_file }
-  its(:content) { should match Regexp.escape("hostname") }
-end
-
-describe file(log_dir) do
-  it { should exist }
-  it { should be_mode 755 }
-  it { should be_owned_by user }
-  it { should be_grouped_into group }
-end
-
-describe file(db_dir) do
-  it { should exist }
-  it { should be_mode 755 }
-  it { should be_owned_by user }
-  it { should be_grouped_into group }
+when "freebsd", "openbsd"
+  default_group = "wheel"
 end
 
 case os[:family]
-when "freebsd"
-  describe file("/etc/rc.conf.d/hostname") do
+when "redhat"
+  describe file("/etc/sysconfig/network") do
+    it { should exist }
     it { should be_file }
+    it { should be_mode 644 }
+    it { should be_owned_by default_user }
+    it { should be_grouped_into default_group }
+    its(:content) { should match(/^HOSTNAME="#{Regexp.escape(fqdn)}"$/) }
+  end
+when "freebsd"
+  describe file("/etc/rc.conf") do
+    it { should exist }
+    it { should be_file }
+    it { should be_mode 644 }
+    it { should be_owned_by default_user }
+    it { should be_grouped_into default_group }
+    its(:content) { should match(/^hostname="#{Regexp.escape(fqdn)}"$/) }
+  end
+when "openbsd"
+  describe file("/etc/myname") do
+    it { should exist }
+    it { should be_file }
+    it { should be_mode 644 }
+    it { should be_owned_by default_user }
+    it { should be_grouped_into default_group }
+    its(:content) { should match(/^#{Regexp.escape(fqdn)}$/) }
+  end
+when "ubuntu"
+  describe file("/etc/hostname") do
+    it { should exist }
+    it { should be_file }
+    it { should be_mode 644 }
+    it { should be_owned_by default_user }
+    it { should be_grouped_into default_group }
+    its(:content) { should match(/^#{Regexp.escape(short_name)}$/) }
   end
 end
 
-describe service(service) do
-  it { should be_running }
-  it { should be_enabled }
+case os[:family]
+when "freebsd"
+  describe command("hostname -f") do
+    its(:exit_status) { should eq 0 }
+    its(:stderr) { should eq "" }
+    its(:stdout) { should match(/^#{Regexp.escape(fqdn)}$/) }
+  end
+when "openbsd", "redhat"
+  describe command("hostname") do
+    its(:exit_status) { should eq 0 }
+    its(:stderr) { should eq "" }
+    its(:stdout) { should match(/^#{Regexp.escape(fqdn)}$/) }
+  end
+when "ubuntu"
+  describe command("hostname") do
+    its(:exit_status) { should eq 0 }
+    its(:stderr) { should eq "" }
+    its(:stdout) { should match(/^#{Regexp.escape(short_name)}$/) }
+  end
+
+  describe command("hostname --fqdn") do
+    its(:exit_status) { should eq 0 }
+    its(:stderr) { should eq "" }
+    its(:stdout) { should match(/^#{Regexp.escape(fqdn)}$/) }
+  end
 end
 
-ports.each do |p|
-  describe port(p) do
-    it { should be_listening }
+describe command("ansible -m setup localhost") do
+  # XXX work around #16615 https://github.com/ansible/ansible/issues/16615
+  let(:command_output_as_json) { MultiJson.load(subject.stdout.gsub("localhost | SUCCESS =>", "")) }
+
+  its(:exit_status) { should eq 0 }
+  it "outputs a valid JSON" do
+    expect { command_output_as_json }.not_to raise_error
+  end
+  it "contains correct ansible_fqdn" do
+    expect(command_output_as_json).to include("ansible_facts" => include("ansible_fqdn" => fqdn))
+  end
+  it "contains correct ansible_hostname" do
+    expect(command_output_as_json).to include("ansible_facts" => include("ansible_hostname" => short_name))
   end
 end
