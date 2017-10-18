@@ -1,0 +1,8 @@
+hostname_user: hostname
+hostname_group: hostname
+hostname_log_dir: /var/log/hostname
+hostname_db_dir: "{{ __hostname_db_dir }}"
+hostname_service: hostname
+hostname_conf_dir: "{{ __hostname_conf_dir }}"
+hostname_conf_file: "{{ __hostname_conf_dir }}/hostname.conf"
+hostname_flags: ""

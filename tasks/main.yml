@@ -1,0 +1,37 @@
+---
+# tasks file for ansible-role-hostname
+
+- include_vars: "{{ ansible_os_family }}.yml"
+
+- include: "install-{{ ansible_os_family }}.yml"
+
+- name: Create log directory
+  file:
+    path: "{{ hostname_log_dir }}"
+    mode: 0755
+    owner: "{{ hostname_user }}"
+    group: "{{ hostname_group }}"
+    state: directory
+  notify: Restart hostname
+
+- name: Create db directory
+  file:
+    path: "{{ hostname_db_dir }}"
+    mode: 0755
+    owner: "{{ hostname_user }}"
+    group: "{{ hostname_group }}"
+    state: directory
+  notify: Restart hostname
+
+- name: Create hostname.conf
+  template:
+    src: hostname.conf.j2
+    dest: "{{ hostname_conf_file }}"
+    validate: echo %s
+  notify: Restart hostname
+
+- name: Start hostname
+  service:
+    name: "{{ hostname_service }}"
+    enabled: true
+    state: started
