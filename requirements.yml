@@ -1,4 +1,3 @@
 ---
 
 - name: reallyenglish.hosts
-  src: https://github.com/reallyenglish/ansible-role-hosts/archive/extra_localhost.tar.gz
