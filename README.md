@@ -7,7 +7,7 @@ Configure `hostname(1)`
 Ubuntu does not manage DNS domain name of the host. It is up to the users to
 set up one. Note that it is officially stated that setting `/etc/hostname`,
 which the role modifies, to FQDN is not the Right Thing. The role sets the
-short form of `hostname_fqdn` in `/etc/hostname` and, silently discards the
+short form of `hostname_fqdn` in `/etc/hostname`, and silently discards the
 rest of `hostname_fqdn`.
 
 # Requirements
