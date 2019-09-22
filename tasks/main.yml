@@ -9,7 +9,7 @@
     that:
       - hostname_fqdn is defined
       - hostname_fqdn != ""
-    
+
 # XXX replace `include` with `include_task` after all platforms have recent
 # version of ansible
 - include: "configure-{{ ansible_os_family }}.yml"
