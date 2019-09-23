@@ -1,3 +1,7 @@
+## Release 1.0.4
+
+* QA
+
 ## Release 1.0.3
 
 * c2aa70a bugfix: do not run assert when in check mode
