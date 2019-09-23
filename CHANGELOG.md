@@ -1,3 +1,7 @@
+## Release 1.0.5
+
+* a08a23a QA
+
 ## Release 1.0.4
 
 * QA
