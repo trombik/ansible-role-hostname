@@ -19,6 +19,7 @@ galaxy_info:
         - xenial
     - name: EL
       versions:
+        - 7
   galaxy_tags:
     - hostname
 dependencies: []
